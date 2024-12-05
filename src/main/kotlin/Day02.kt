@@ -26,9 +26,6 @@ fun main() {
     fun part2(input: List<String>): Int {
         val reports = parseInputToIntList(input)
 
-        /**
-         * Returns null if the report is valid, or the index of the first invalid number.
-         */
         fun checkReport(report: List<Int>): Boolean {
             var wasIncreasing: Boolean? = null
             for ((level0, level1) in report.windowed(2)) {
