@@ -29,47 +29,30 @@ fun main() {
         /**
          * Returns null if the report is valid, or the index of the first invalid number.
          */
-        fun checkReport(report: List<Int>): Int? {
+        fun checkReport(report: List<Int>): Boolean {
             var wasIncreasing: Boolean? = null
-            var idx = 0
             for ((level0, level1) in report.windowed(2)) {
                 val isIncreasing = when (level1 - level0) {
                     in 1..3 -> true
                     in -3..-1 -> false
-                    else -> return idx
+                    else -> return false
                 }
                 when {
                     wasIncreasing == null -> wasIncreasing = isIncreasing
-                    wasIncreasing != isIncreasing -> return idx
+                    wasIncreasing != isIncreasing -> return false
                 }
-                idx++
             }
-            return null
+            return true
         }
 
-        var count = 0
-
-        reports.forEach { report ->
-            val invalidIdx = checkReport(report)
-            if (invalidIdx == null) {
-                count++
-                return@forEach
+        return reports.count { report ->
+            if (checkReport(report)) return@count true
+            for (i in report.indices) {
+                val report1 = report.toMutableList().apply { removeAt(i) }
+                if (checkReport(report1)) return@count true
             }
-            val report1 = report.toMutableList().apply { removeAt(invalidIdx) }
-            if (checkReport(report1) == null) {
-                "Removed ${report[invalidIdx]} at $invalidIdx from $report".println()
-                count++
-                return@forEach
-            }
-            val report2 = report.toMutableList().apply { removeAt(invalidIdx + 1) }
-            if (checkReport(report2) == null) {
-                "Removed ${report[invalidIdx + 1]} at ${invalidIdx + 1} from $report".println()
-                count++
-                return@forEach
-            }
+            return@count false
         }
-
-        return count
     }
 
     val testInput = readInput("02t")
