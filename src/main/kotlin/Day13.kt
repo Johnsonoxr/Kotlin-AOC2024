@@ -1,4 +1,6 @@
-import kotlin.math.atan
+import com.johnsonoxr.exnumber.ExFloat
+import com.johnsonoxr.exnumber.ExFloat.Companion.toExFloat
+import kotlin.math.absoluteValue
 import kotlin.system.measureTimeMillis
 
 fun main() {
@@ -46,38 +48,47 @@ fun main() {
     }
 
     fun part2(input: List<String>): Long {
-        val clawMachines = parseClawMachines(input).map {
-            it.copy(prize = Xy(it.prize.x + 10000000000000L, it.prize.y + 10000000000000L))
-        }
+        val clawMachines = parseClawMachines(input).map { it.copy(prize = Xy(it.prize.x + 10000000000000L, it.prize.y + 10000000000000L)) }
 
-        var cost = 0L
+        var cost = 0L.toExFloat()
 
         clawMachines.forEach { clawMachine ->
-            val slopeA = clawMachine.btnA.y.toDouble() / clawMachine.btnA.x.toDouble()
-            val slopeB = clawMachine.btnB.y.toDouble() / clawMachine.btnB.x.toDouble()
-            val slopePrize = clawMachine.prize.y.toDouble() / clawMachine.prize.x.toDouble()
 
-            if (slopeA > slopePrize && slopeB > slopePrize || slopeA < slopePrize && slopeB < slopePrize) {
+            val ax = clawMachine.btnA.x.toExFloat()
+            val ay = clawMachine.btnA.y.toExFloat()
+            val bx = clawMachine.btnB.x.toExFloat()
+            val by = clawMachine.btnB.y.toExFloat()
+            val px = clawMachine.prize.x.toExFloat()
+            val py = clawMachine.prize.y.toExFloat()
+
+            //  1: x * ay / ax = y
+            //  2: (x - px) * by / bx = (y - py)
+            //
+            //  x = y * ax / ay = (py + (x - px) * by / bx) * ax / ay
+            //  x = (py - px * by / bx) * ax / ay + x * by / bx * ax / ay
+            //  x * (1 - by / bx * ax / ay) = (py - px * by / bx) * ax / ay
+            //  x = (py - px * by / bx) * ax / ay / (1 - by / bx * ax / ay)
+
+            val x = (py - px * by / bx) * ax / ay / (1.0.toExFloat() - by * ax / bx / ay)
+
+            val aStep = x / ax
+            val bStep = (px - x) / bx
+            val aStepRound = aStep.round()
+            val bStepRound = bStep.round()
+
+            if (aStepRound < 0 || bStepRound < 0) {
                 return@forEach
             }
 
-            val slopeLarge = if (slopeA > slopeB) slopeA else slopeB
-            val slopeSmall = if (slopeA < slopeB) slopeA else slopeB
-            val radLarge = atan(slopeLarge)
-            val radSmall = atan(slopeSmall)
-            val radPrize = atan(slopePrize)
-
-            val radSmallDiffToPrize = radPrize - radSmall
-            val radLargeDiffToPrize = radPrize - radLarge
-            val radOther = 180 - radSmallDiffToPrize - radLargeDiffToPrize
-
-            val edgePrizeLenSquare = clawMachine.prize.x * clawMachine.prize.x + clawMachine.prize.y * clawMachine.prize.y
-
-            val edgeSmallSlope = edgePrizeLenSquare / (clawMachine.btnA.x * clawMachine.btnA.x + clawMachine.btnA.y * clawMachine.btnA.y)
+            if ((aStepRound - aStep).toDouble().absoluteValue < 1e-5 && (bStepRound - bStep).toDouble().absoluteValue < 1e-5) {
+                cost += aStepRound * 3 + bStepRound
+            }
         }
 
-        return cost
+        return cost.toLong()
     }
+
+    ExFloat.setGlobalStringConverter(ExFloat.StringConverter.DECIMAL_ROUNDED_TO_3)
 
     val testInput = readInput("13t")
     val input = readInput("13")
@@ -90,7 +101,7 @@ fun main() {
 
     "Part 1 completed in $time1 ms".println()
 
-//    check(part2(testInput) == 1)
+//    check(part2(testInput) == 480L)
 
     val time2 = measureTimeMillis {
         part2(input).println()
