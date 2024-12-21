@@ -90,22 +90,17 @@ fun main() {
         }
     }
 
-    fun part2(codes: List<String>): Int {
+    fun part2(codes: List<String>, intermediateRobotCount: Int): Long {
 
-        class Operator(val controller: Operator?, val keyboard: Keyboard, var controlling: Operator? = null) {
+        class Operator(val controller: Operator?, val keyboard: Keyboard) {
             var currentP: Position = keyboard['A']
-            val currentV: Char
-                get() = keyboard[currentP]!!
 
-            val bestCache = mutableMapOf<String, List<Char>>()
+            val cache = mutableMapOf<String, Long>()
 
-            fun getCacheKey(): String = if (controlling == null) "$currentV" else "$currentV${controlling!!.getCacheKey()}"
+            fun press(v: Char): Long {
+                if (controller == null) return 1
 
-            fun press(v: Char): List<Char> {
-                if (controller == null) return listOf(v)
-
-                val cacheKey = "$v${getCacheKey()}"
-                val moves = bestCache.getOrPut(cacheKey) {
+                val moves = cache.getOrPut("${keyboard[currentP]} to $v") {
                     val target = keyboard[v]
                     val horizontalMoves = when {
                         currentP.x > target.x -> List(currentP.x - target.x) { '<' }
@@ -122,12 +117,9 @@ fun main() {
                     if (currentP.copy(x = target.x) in keyboard) possibleMoveCombinations.add(horizontalMoves + verticalMoves + listOf('A'))
                     if (currentP.copy(y = target.y) in keyboard) possibleMoveCombinations.add(verticalMoves + horizontalMoves + listOf('A'))
 
-                    val bestControllerMoves = possibleMoveCombinations.map { moves ->
-                        val cachedControllerP = controller.currentP
-                        val movesOfController = moves.map { controller.press(it) }.flatten()
-                        controller.currentP = cachedControllerP
-                        movesOfController
-                    }.minBy { it.size }
+                    val bestControllerMoves = possibleMoveCombinations.minOf { moves ->
+                        moves.sumOf { controller.press(it) }
+                    }
 
                     return@getOrPut bestControllerMoves
                 }
@@ -138,23 +130,17 @@ fun main() {
             }
         }
 
-        val me = Operator(null, directionalKeyboard)
-        var controller = me
-        val intermediateRobots = mutableListOf<Operator>()
-        repeat(25) {
-            intermediateRobots.add(Operator(controller, directionalKeyboard))
-            controller.controlling = intermediateRobots.last()
-            controller = intermediateRobots.last()
+        val robots = mutableListOf(Operator(null, directionalKeyboard))
+        repeat(intermediateRobotCount) {
+            robots.add(Operator(robots.last(), directionalKeyboard))
         }
-        val lastRobot = Operator(intermediateRobots.last(), numericalKeyboard)
-        controller.controlling = lastRobot
+        val lastRobot = Operator(robots.last(), numericalKeyboard)
 
         return codes.sumOf { code ->
-            val inputs = code.toList().map { c ->
-                c.println()
+            val operationSum = code.toList().sumOf { c ->
                 lastRobot.press(c)
-            }.flatten().joinToString("")
-            inputs.length * code.take(3).toInt()
+            }
+            operationSum * code.take(3).toLong()
         }
     }
 
@@ -169,10 +155,10 @@ fun main() {
 
     "Part 1 completed in $time1 ms".println()
 
-//    check(part2(testInput) == 126384)
+    check(part2(testInput, intermediateRobotCount = 2) == 126384L)
 
     val time2 = measureTimeMillis {
-        part2(input).println()
+        part2(input, intermediateRobotCount =  25).println()
     }
 
     "Part 2 completed in $time2 ms".println()
