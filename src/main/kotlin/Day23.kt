@@ -26,8 +26,33 @@ fun main() {
         return triConnections.count { it.any { computer -> computer.startsWith('t') } }
     }
 
-    fun part2(input: List<String>): Int {
-        return 1
+    fun part2(input: List<String>): String {
+        val connections = input.map { line -> line.split("-").toList() }
+        val computers = connections.flatten().toMutableSet()
+        val cmpLinkMap = computers.associateWith { mutableSetOf<String>() }
+
+        connections.forEach { (c1, c2) ->
+            cmpLinkMap[c1]?.add(c2)
+            cmpLinkMap[c2]?.add(c1)
+        }
+
+        fun Set<String>.findMaxLan(candidates: Set<String>): Set<String> {
+            this.println()
+            val validComputers = (candidates - this).filter { cmpLinkMap[it]!!.containsAll(this) }
+            if (validComputers.isEmpty()) return this
+
+            val rsts = mutableListOf<Set<String>>()
+            val mu = validComputers.toMutableSet()
+            while (mu.isNotEmpty()) {
+                val seed = mu.first()
+                mu.remove(seed)
+                rsts.add((this + validComputers).findMaxLan(mu.toSet()))
+            }
+            return rsts.maxBy { it.size }
+//            return validComputers.map { validComputer -> (this + validComputer).findMaxLan(validComputers.toSet()) }.maxBy { it.size }
+        }
+
+        return setOf<String>().findMaxLan(computers).sorted().joinToString(",")
     }
 
     val testInput = readInput("23t")
@@ -41,7 +66,7 @@ fun main() {
 
     "Part 1 completed in $time1 ms".println()
 
-    check(part2(testInput) == 1)
+    check(part2(testInput) == "co,de,ka,ta")
 
     val time2 = measureTimeMillis {
         part2(input).println()
