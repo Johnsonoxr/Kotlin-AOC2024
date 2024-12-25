@@ -28,7 +28,7 @@ fun main() {
 
     fun part2(input: List<String>): String {
         val connections = input.map { line -> line.split("-").toList() }
-        val computers = connections.flatten().toMutableSet()
+        val computers = connections.flatten().toSet()
         val cmpLinkMap = computers.associateWith { mutableSetOf<String>() }
 
         connections.forEach { (c1, c2) ->
@@ -37,19 +37,16 @@ fun main() {
         }
 
         fun Set<String>.findMaxLan(candidates: Set<String>): Set<String> {
-            this.println()
-            val validComputers = (candidates - this).filter { cmpLinkMap[it]!!.containsAll(this) }
+            val validComputers = candidates.filter { cmpLinkMap[it]!!.containsAll(this) }.toMutableSet()
             if (validComputers.isEmpty()) return this
 
             val rsts = mutableListOf<Set<String>>()
-            val mu = validComputers.toMutableSet()
-            while (mu.isNotEmpty()) {
-                val seed = mu.first()
-                mu.remove(seed)
-                rsts.add((this + validComputers).findMaxLan(mu.toSet()))
+            while (validComputers.isNotEmpty()) {
+                val seed = validComputers.first()
+                validComputers.remove(seed)
+                rsts.add((this + seed).findMaxLan(validComputers))
             }
             return rsts.maxBy { it.size }
-//            return validComputers.map { validComputer -> (this + validComputer).findMaxLan(validComputers.toSet()) }.maxBy { it.size }
         }
 
         return setOf<String>().findMaxLan(computers).sorted().joinToString(",")
